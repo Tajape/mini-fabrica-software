@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 export default function ModalLancamento({ isOpen, onClose, onSave, projetos, lancamentoParaEditar }) {
+  // Função para pegar a data local no formato YYYY-MM-DD
+  const obterDataLocal = () => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  };
+
   const [formData, setFormData] = useState({
     projeto_id: '',
     colaborador: '',
-    data: new Date().toISOString().split('T')[0],
+    data: obterDataLocal(),
     horas: '',
     tipo: 'evolutiva',
     descricao: ''
@@ -13,7 +22,7 @@ export default function ModalLancamento({ isOpen, onClose, onSave, projetos, lan
 
   useEffect(() => {
     if (lancamentoParaEditar) setFormData(lancamentoParaEditar);
-    else setFormData({ projeto_id: '', colaborador: '', data: new Date().toISOString().split('T')[0], horas: '', tipo: 'evolutiva', descricao: '' });
+    else setFormData({ projeto_id: '', colaborador: '', data: obterDataLocal(), horas: '', tipo: 'evolutiva', descricao: '' });
   }, [lancamentoParaEditar, isOpen]);
 
   if (!isOpen) return null;

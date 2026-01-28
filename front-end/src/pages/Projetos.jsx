@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Briefcase, Calendar, DollarSign, User, Search, Edit2, Trash2 } from 'lucide-react';
 import api from '../services/api';
-import ModalProjeto from '../components/ModalProjeto'; 
+import ModalProjeto from '../components/ModalProjeto';
+import { formatarDataBR } from '../utils/dateUtils'; 
 
 export default function Projetos() {
   const [projetos, setProjetos] = useState([]);
@@ -130,7 +131,7 @@ export default function Projetos() {
                   <Calendar size={14} className="text-white"/> Início:
                 </span>
                 <span className="text-slate-300 font-bold">
-                  {proj.data_inicio ? new Date(proj.data_inicio).toLocaleDateString('pt-BR') : '--/--/----'}
+                  {formatarDataBR(proj.data_inicio)}
                 </span>
               </div>
               
@@ -139,7 +140,7 @@ export default function Projetos() {
                   <Calendar size={14} className="text-white"/> Término:
                 </span>
                 <span className="text-slate-300 font-bold">
-                  {proj.data_fim ? new Date(proj.data_fim).toLocaleDateString('pt-BR') : 'Não definida'}
+                  {formatarDataBR(proj.data_fim) === '--/--/----' ? 'Não definida' : formatarDataBR(proj.data_fim)}
                 </span>
               </div>
 

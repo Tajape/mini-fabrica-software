@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Plus, Trash2, User, Search, Edit2, X, Calendar, Filter } from 'lucide-react';
 import api from '../services/api';
+import { formatarDataBR } from '../utils/dateUtils';
 
 export default function Lancamentos() {
   const [lancamentos, setLancamentos] = useState([]);
@@ -149,7 +150,7 @@ export default function Lancamentos() {
             {lancamentosFiltrados.map(l => (
               <tr key={l.id} className="text-slate-300 hover:bg-slate-800/30 transition-all group">
                 <td className="px-6 py-4">
-                  <div className="text-white font-medium">{new Date(l.data).toLocaleDateString('pt-BR')}</div>
+                  <div className="text-white font-medium">{formatarDataBR(l.data)}</div>
                   <div className="text-[10px] text-slate-500 uppercase font-bold flex items-center gap-1">
                     <User size={10}/> {l.colaborador}
                   </div>

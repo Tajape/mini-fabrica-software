@@ -10,10 +10,10 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Pega o projeto_id enviado pelo React (filtros)
         $projetoId = $request->query('projeto_id');
+        $dataInicio = $request->query('data_inicio');
+        $dataFim = $request->query('data_fim');
 
-        // Se não vier ID, buscamos o primeiro projeto do banco para não quebrar a tela
         if (!$projetoId) {
             $primeiroProjeto = Projeto::first();
             if (!$primeiroProjeto) {
@@ -22,30 +22,35 @@ class DashboardController extends Controller
             $projetoId = $primeiroProjeto->id;
         }
 
-        // 2. Busca o projeto específico
         $projeto = Projeto::with('cliente')->findOrFail($projetoId);
 
-        // 3. Busca os lançamentos deste projeto
-        $lancamentos = LancamentoHora::where('projeto_id', $projetoId)->get();
+        // --- LÓGICA DE FILTRO CORRIGIDA (whereDate) ---
+        // O whereDate ignora as horas e fuso horário, comparando apenas o dia.
+        $query = LancamentoHora::where('projeto_id', $projetoId);
 
-        // 4. Cálculos Financeiros
+        if ($dataInicio) {
+            $query->whereDate('data', '>=', $dataInicio);
+        }
+
+        if ($dataFim) {
+            $query->whereDate('data', '<=', $dataFim);
+        }
+
+        $lancamentos = $query->get();
+        // ----------------------------------------------
+
+        // --- CÁLCULOS ---
         $horasTotais = (float) $lancamentos->sum('horas');
         $custoHoraBase = (float) ($projeto->custo_hora_base ?? 0);
         $receita = (float) ($projeto->valor_contrato ?? 0);
         
-        // Custo Total = Horas lançadas * Valor da hora do projeto
         $custoTotal = $horasTotais * $custoHoraBase;
-        
-        // Lucro em Reais
         $margemRs = $receita - $custoTotal;
-        
-        // Lucro em Porcentagem (Margem %)
         $margemPorc = $receita > 0 ? ($margemRs / $receita) * 100 : 0;
         
-        // Ponto de Equilíbrio: Quantas horas podem ser gastas antes do lucro virar zero
+        // Ponto de equilíbrio (KPI de referência do projeto)
         $breakEven = $custoHoraBase > 0 ? ($receita / $custoHoraBase) : 0;
 
-        // 5. Agrupamento por Tipo (Evolutiva, Corretiva, etc.) para o Gráfico de Lista
         $resumoTipos = $lancamentos->groupBy('tipo')->map(function ($itens, $tipo) use ($custoHoraBase) {
             $horasPorTipo = (float) $itens->sum('horas');
             return [
@@ -55,7 +60,6 @@ class DashboardController extends Controller
             ];
         })->values();
 
-        // 6. Retorno no formato exato que o seu Dashboard.jsx espera
         return response()->json([
             'projeto' => [
                 'id' => $projeto->id,
