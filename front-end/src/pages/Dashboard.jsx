@@ -61,39 +61,144 @@ export default function Dashboard() {
   const exibirDataBR = (dataString) => {
     return formatarDataBR(dataString);
   };
+  // UTILITÁRIOS DE FORMATAÇÃO
+  const formatCurrency = (valor) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const formatNumber = (valor) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const exportarCSV = () => {
     if (!data) return;
     const { projeto, resumo_tipos } = data;
-    const dataGeracao = new Date().toLocaleString("pt-BR");
+    const geracao = new Date().toLocaleString("pt-BR");
+
+    const totalHoras = resumo_tipos.reduce(
+      (s, t) => s + Number(t.horas || 0),
+      0,
+    );
+
+    const linhas = [];
+    linhas.push(["RELATÓRIO EXECUTIVO"]);
+    linhas.push([]);
+    linhas.push(["Projeto", projeto.nome.toUpperCase()]);
+    linhas.push([
+      "Período",
+      `${filtros.data_inicio || "--"} até ${filtros.data_fim || "--"}`,
+    ]);
+    linhas.push(["Gerado em", geracao]);
+    linhas.push([]);
+    linhas.push(["RESUMO FINANCEIRO"]);
+    linhas.push(["KPI", "VALOR"]);
+    linhas.push(["Faturamento", formatCurrency(projeto.receita)]);
+    linhas.push(["Custo Operacional", formatCurrency(projeto.custo_total)]);
+    linhas.push(["Margem (%)", `${formatNumber(projeto.margem_porc)}%`]);
+    linhas.push(["Margem (R$)", formatCurrency(projeto.margem_rs)]);
+    linhas.push(["Break-even (h)", `${formatNumber(projeto.break_even)}h`]);
+    linhas.push([]);
+    linhas.push(["DETALHE POR TIPO"]);
+    linhas.push(["Tipo", "Horas", "Custo", "% Horas"]);
+
+    resumo_tipos.forEach((t) => {
+      const percentual =
+        totalHoras > 0
+          ? ((Number(t.horas) / totalHoras) * 100).toFixed(1)
+          : "0.0";
+      linhas.push([
+        t.tipo,
+        `${t.horas}h`,
+        formatCurrency(t.custo),
+        `${percentual}%`,
+      ]);
+    });
+
+    // Monta CSV com ; e BOM UTF-8
     let csv = "\uFEFF";
-    csv += `RELATÓRIO EXECUTIVO\nPROJETO:;${projeto.nome.toUpperCase()}\n`;
-    csv += `RESUMO FINANCEIRO\nFaturamento;R$ ${projeto.receita}\nCusto;R$ ${projeto.custo_total}\n`;
+    linhas.forEach((row) => {
+      csv += row.join(";") + "\n";
+    });
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Executivo_${projeto.nome}.csv`;
+    const nomeArquivo = `Executivo_${projeto.nome.replace(/\s+/g, "_")}.csv`;
+    link.download = nomeArquivo;
     link.click();
   };
 
   const exportarPDF = () => {
     if (!data) return;
     const { projeto, resumo_tipos } = data;
-    const doc = new jsPDF();
-    doc.text("MINI FABRICA DE SOFTWARE", 15, 25);
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const geracao = new Date().toLocaleString("pt-BR");
+
+    const header = (doc) => {
+      doc.setFontSize(14);
+      doc.setTextColor("#1f2937");
+      doc.text("MINI FÁBRICA DE SOFTWARE", 40, 48);
+      doc.setFontSize(11);
+      doc.setTextColor("#374151");
+      doc.text(`Relatório Executivo — ${projeto.nome}`, 40, 66);
+      doc.setFontSize(9);
+      doc.setTextColor("#6b7280");
+      doc.text(`Gerado em: ${geracao}`, 40, 80);
+    };
+
+    // KPIs
     autoTable(doc, {
-      startY: 40,
+      startY: 100,
       head: [["KPI", "VALOR"]],
       body: [
-        ["FATURAMENTO", `R$ ${projeto.receita.toLocaleString("pt-BR")}`],
-        [
-          "CUSTO OPERACIONAL",
-          `R$ ${projeto.custo_total.toLocaleString("pt-BR")}`,
-        ],
-        ["MARGEM (%)", `${projeto.margem_porc.toFixed(2)}%`],
+        ["Faturamento", formatCurrency(projeto.receita)],
+        ["Custo Operacional", formatCurrency(projeto.custo_total)],
+        ["Margem (%)", `${formatNumber(projeto.margem_porc)}%`],
+        ["Margem (R$)", formatCurrency(projeto.margem_rs)],
+        ["Break-even (h)", `${formatNumber(projeto.break_even)}h`],
       ],
+      styles: { cellPadding: 6, halign: "left" },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      theme: "grid",
+      didDrawPage: (dataArg) => {
+        header(doc);
+        const page = doc.getNumberOfPages();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(9);
+        doc.setTextColor("#9ca3af");
+        doc.text(`Página ${page}`, pageWidth - 80, pageHeight - 30);
+      },
     });
-    doc.save(`Analise_${projeto.nome}.pdf`);
+
+    // Tabela de tipos
+    const tiposBody = resumo_tipos.map((t) => [
+      t.tipo,
+      `${t.horas}h`,
+      formatCurrency(t.custo),
+    ]);
+    autoTable(doc, {
+      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : 220,
+      head: [["Tipo", "Horas", "Custo"]],
+      body: tiposBody,
+      styles: { cellPadding: 6 },
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      theme: "striped",
+    });
+
+    doc.save(`Analise_${projeto.nome.replace(/\s+/g, "_")}.pdf`);
   };
 
   const getStatusMargem = (porcentagem) => {
