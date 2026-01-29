@@ -81,5 +81,3 @@ Notas sobre integração front-back
 - Validadores no backend (`required`, `exists`, `unique`) protegem integridade dos dados; o front captura erros e mostra mensagens básicas.
 
 ---
-
-Próximo passo opcional: gerar cópias completas dos arquivos com comentários linha-a-linha (arquivos `*.php` e `*.jsx` comentados) dentro de `annotated/` para você abrir e estudar. Deseja que eu gere essas cópias completas agora?

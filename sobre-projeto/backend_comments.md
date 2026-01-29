@@ -82,7 +82,3 @@ Por que importante: implementa regras de negócio (e-mail único) e serve como A
 - Arquivos `0001_*` (users, cache, jobs) são migrations padrão do framework (usuário, sessões, jobs, cache, failed_jobs etc.).
 
 Por que as migrations importam: definem o schema e restrições (unique, foreign keys, onDelete cascade) que garantem integridade referencial e regras de negócio (ex.: e-mail único).
-
----
-
-Se quiser, eu posso agora gerar arquivos textuais em `annotated/` com cada arquivo completo contendo comentários linha-a-linha (cópias comentadas dos arquivos PHP e JS). Quer que eu crie essas cópias comentadas completas ou os resumos acima já atendem ao que você precisa para a apresentação?
