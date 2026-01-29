@@ -1,3 +1,8 @@
+// Página de Projetos
+// Carrega projetos e clientes na montagem usando fetchDados com Promise.all
+// handleSalvar: converte tipos (parseFloat/parseInt) e chama api.post/api.put conforme edição
+// deletarProjeto: chama api.delete('/projetos/{id}')
+// Usa ModalProjeto para UI de criação/edição
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -20,10 +25,12 @@ export default function Projetos() {
   const [projetoParaEditar, setProjetoParaEditar] = useState(null);
   const [busca, setBusca] = useState("");
 
+  // Carrega dados iniciais de projetos e clientes
   useEffect(() => {
     fetchDados();
   }, []);
 
+  // Faz requisições paralelas para projetos e clientes
   const fetchDados = async () => {
     try {
       const [resProjetos, resClientes] = await Promise.all([
@@ -37,12 +44,14 @@ export default function Projetos() {
     }
   };
 
+  // Filtra projetos por nome ou nome do cliente
   const projetosFiltrados = projetos.filter(
     (proj) =>
       proj.nome.toLowerCase().includes(busca.toLowerCase()) ||
       proj.cliente?.nome?.toLowerCase().includes(busca.toLowerCase()),
   );
 
+  // Salva um novo projeto ou atualiza um existente
   const handleSalvar = async (dados) => {
     try {
       const payload = {
@@ -53,8 +62,10 @@ export default function Projetos() {
       };
 
       if (projetoParaEditar) {
+        // Rota PUT /api/projetos/{id}
         await api.put(`/projetos/${projetoParaEditar.id}`, payload);
       } else {
+        // Rota POST /api/projetos
         await api.post("/projetos", payload);
       }
 
@@ -67,9 +78,11 @@ export default function Projetos() {
     }
   };
 
+  // Deleta um projeto após confirmação
   const deletarProjeto = async (id) => {
     if (window.confirm("Deseja realmente excluir este projeto?")) {
       try {
+        // Rota DELETE /api/projetos/{id}
         await api.delete(`/projetos/${id}`);
         setProjetos(projetos.filter((p) => p.id !== id));
       } catch (err) {
@@ -114,13 +127,14 @@ export default function Projetos() {
         />
       </div>
 
+      {/* Grade de Cards de Projetos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projetosFiltrados.map((proj) => (
           <div
             key={proj.id}
             className="bg-[#1e293b] border border-slate-800 p-6 rounded-3xl shadow-xl hover:border-indigo-500/50 transition-all group relative"
           >
-            {/* ÍCONES DE AÇÃO (Lápis e Lixeira) */}
+            {/* Ícones de ação (Editar e Deletar) - aparecem ao passar mouse */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => {
@@ -139,6 +153,7 @@ export default function Projetos() {
               </button>
             </div>
 
+            {/* Status do projeto */}
             <div className="flex justify-between items-start mb-4">
               <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-3 py-1 rounded-full uppercase">
                 {proj.status?.replace("_", " ")}
@@ -146,12 +161,15 @@ export default function Projetos() {
             </div>
 
             <h3 className="text-xl font-bold text-white mb-1">{proj.nome}</h3>
+            {/* Cliente responsável */}
             <div className="flex items-center gap-2 text-slate-400 text-sm mb-6">
               <User size={14} className="text-indigo-400" />
               {proj.cliente?.nome || "Cliente Indefinido"}
             </div>
 
+            {/* Detalhes do projeto */}
             <div className="space-y-3 border-t border-slate-800 pt-4">
+              {/* Data de início */}
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 flex items-center gap-2">
                   <Calendar size={14} className="text-white" /> Início:
@@ -161,6 +179,7 @@ export default function Projetos() {
                 </span>
               </div>
 
+              {/* Data de término */}
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 flex items-center gap-2">
                   <Calendar size={14} className="text-white" /> Término:
@@ -172,6 +191,7 @@ export default function Projetos() {
                 </span>
               </div>
 
+              {/* Valor do contrato */}
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 flex items-center gap-2">
                   <DollarSign size={14} /> Contrato:

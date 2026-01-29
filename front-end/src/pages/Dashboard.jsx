@@ -1,3 +1,9 @@
+// Página Dashboard
+// Carrega lista de projetos e quando filtros.projeto_id definido, chama api.get('/dashboard', { params: filtros })
+// exportarCSV: gera relatório em CSV com BOM UTF-8
+// exportarPDF: gera relatório em PDF com jsPDF + autoTable
+// getStatusMargem: retorna rótulo, cor e ícone baseado na margem (%)
+// Mostra cards com KPIs, gráfico de pizza (recharts) e resumo por tipo
 import { useState, useEffect } from "react";
 import {
   TrendingUp,
@@ -23,6 +29,7 @@ import { formatarDataBR } from "../utils/dateUtils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Cores para o gráfico de pizza por tipo de demanda
 const CORES_DEMANDA = {
   legislativa: "#818cf8",
   implantação: "#10b981",
@@ -40,40 +47,47 @@ export default function Dashboard() {
     data_fim: "",
   });
 
+  // Carrega lista de projetos na montagem
   useEffect(() => {
     api.get("/projetos").then((res) => {
       setProjetos(res.data);
+      // Seleciona o primeiro projeto por padrão
       if (res.data.length > 0)
         setFiltros((f) => ({ ...f, projeto_id: res.data[0].id }));
     });
   }, []);
 
+  // Quando o projeto selecionado muda, carrega os dados do dashboard
   useEffect(() => {
     if (filtros.projeto_id) {
-      // Enviamos as datas exatamente como estão no estado (strings YYYY-MM-DD)
+      // Rota GET /api/dashboard com filtros de projeto e datas
       api
         .get("/dashboard", { params: filtros })
         .then((res) => setData(res.data));
     }
   }, [filtros]);
 
-  // FUNÇÃO MILAGROSA: Converte string do banco para exibição sem perder 1 dia
+  // Converte string de data para formato BR (DD/MM/YYYY)
   const exibirDataBR = (dataString) => {
     return formatarDataBR(dataString);
   };
+
   // UTILITÁRIOS DE FORMATAÇÃO
+  // Formata valor para moeda brasileira
   const formatCurrency = (valor) =>
     Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
 
+  // Formata número com 2 casas decimais
   const formatNumber = (valor) =>
     Number(valor || 0).toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
 
+  // Exporta relatório em CSV com BOM UTF-8
   const exportarCSV = () => {
     if (!data) return;
     const { projeto, resumo_tipos } = data;
@@ -132,6 +146,7 @@ export default function Dashboard() {
     link.click();
   };
 
+  // Exporta relatório em PDF com jsPDF e autoTable
   const exportarPDF = () => {
     if (!data) return;
     const { projeto, resumo_tipos } = data;
@@ -150,7 +165,7 @@ export default function Dashboard() {
       doc.text(`Gerado em: ${geracao}`, 40, 80);
     };
 
-    // KPIs
+    // Tabela de KPIs
     autoTable(doc, {
       startY: 100,
       head: [["KPI", "VALOR"]],
@@ -179,7 +194,7 @@ export default function Dashboard() {
       },
     });
 
-    // Tabela de tipos
+    // Tabela de tipos de demanda
     const tiposBody = resumo_tipos.map((t) => [
       t.tipo,
       `${t.horas}h`,
@@ -201,6 +216,7 @@ export default function Dashboard() {
     doc.save(`Analise_${projeto.nome.replace(/\s+/g, "_")}.pdf`);
   };
 
+  // Retorna rótulo, cor e ícone baseado na margem em porcentagem
   const getStatusMargem = (porcentagem) => {
     if (porcentagem > 40)
       return {
@@ -224,12 +240,14 @@ export default function Dashboard() {
   if (!data)
     return <div className="p-8 text-white text-center">Sincronizando...</div>;
 
+  // Prepara dados para o gráfico de pizza (recharts)
   const dadosGrafico = data.resumo_tipos.map((t) => ({
     name: t.tipo.toUpperCase(),
     value: parseFloat(t.horas),
     cor: CORES_DEMANDA[t.tipo.toLowerCase()] || CORES_DEMANDA["outros"],
   }));
 
+  // Obtém status e cor da margem
   const status = getStatusMargem(data.projeto.margem_porc);
 
   return (
@@ -256,8 +274,9 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* FILTROS COM CORREÇÃO DE TIMEZONE */}
+      {/* FILTROS: Projeto, Data Início e Data Fim */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 bg-[#1e293b] p-6 rounded-2xl border border-slate-800">
+        {/* Seletor de Projeto */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] uppercase text-slate-500 font-bold">
             Projeto
@@ -277,6 +296,7 @@ export default function Dashboard() {
           </select>
         </div>
 
+        {/* Filtro de Data Início */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] uppercase text-slate-500 font-bold">
             Data Início
@@ -297,6 +317,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Filtro de Data Fim */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] uppercase text-slate-500 font-bold">
             Data Fim
@@ -318,22 +339,27 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* CARDS COM KPIS PRINCIPAIS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Faturamento total */}
         <Card
           title="Faturamento"
           value={`R$ ${data.projeto.receita.toLocaleString("pt-BR")}`}
           icon={<DollarSign color="#10b981" />}
         />
+        {/* Custo operacional */}
         <Card
           title="Custo Gasto"
           value={`R$ ${data.projeto.custo_total.toLocaleString("pt-BR")}`}
           icon={<AlertTriangle color="#ef4444" />}
         />
+        {/* Margem bruta em reais */}
         <Card
           title="Margem Bruta"
           value={`R$ ${data.projeto.margem_rs.toLocaleString("pt-BR")}`}
           icon={<TrendingUp color="#6366f1" />}
         />
+        {/* Break-even: ponto de equilíbrio em horas */}
         <Card
           title="Equilíbrio"
           value={`${data.projeto.break_even.toFixed(1)}h`}
@@ -341,7 +367,9 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* GRÁFICO DE PIZZA E RESUMO POR TIPO */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Gráfico de Distribuição de Horas */}
         <div className="bg-[#1e293b] p-8 rounded-3xl border border-slate-800 min-h-[400px]">
           <h3 className="text-white font-bold mb-6 flex items-center gap-2 uppercase text-xs tracking-widest text-slate-400">
             <TrendingUp size={16} className="text-indigo-500" /> Distribuição de
@@ -415,6 +443,7 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-6 pt-6 border-t border-slate-800 flex items-center justify-between">
+            {/* Indicador de Saúde Operacional (Margem %) */}
             <div className="flex flex-col">
               <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">
                 Saúde Operacional
@@ -425,6 +454,7 @@ export default function Dashboard() {
                 {status.icon} {status.label}
               </div>
             </div>
+            {/* Exibe a margem em porcentagem com a cor do status */}
             <span className={`text-3xl font-black ${status.color}`}>
               {data.projeto.margem_porc.toFixed(1)}%
             </span>
@@ -435,6 +465,7 @@ export default function Dashboard() {
   );
 }
 
+// Sub-componente: Card para exibir um KPI com ícone, título e valor
 function Card({ title, value, icon }) {
   return (
     <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-800 flex items-center gap-5">

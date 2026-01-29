@@ -1,3 +1,6 @@
+// Modal para lançar/registrar horas de trabalho
+// obterDataLocal() define a data padrão do input como hoje
+// useEffect popula o formulário quando lancamentoParaEditar está presente
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
@@ -8,7 +11,7 @@ export default function ModalLancamento({
   projetos,
   lancamentoParaEditar,
 }) {
-  // Função para pegar a data local no formato YYYY-MM-DD
+  // Função para obter a data local no formato YYYY-MM-DD
   const obterDataLocal = () => {
     const hoje = new Date();
     const ano = hoje.getFullYear();
@@ -26,6 +29,8 @@ export default function ModalLancamento({
     descricao: "",
   });
 
+  // Popula o formulário quando há um lançamento para editar
+  // Caso contrário, reseta para os valores padrão
   useEffect(() => {
     if (lancamentoParaEditar) setFormData(lancamentoParaEditar);
     else
@@ -44,6 +49,7 @@ export default function ModalLancamento({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-[#1e293b] w-full max-w-lg rounded-2xl border border-slate-800 shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Cabeçalho */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <h2 className="text-xl font-bold text-white">🚀 Lançar Horas</h2>
           <button
@@ -54,10 +60,12 @@ export default function ModalLancamento({
           </button>
         </div>
 
+        {/* Formulário com campos de dados do lançamento */}
         <form
           className="p-6 overflow-y-auto space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            // Chama onSave com os dados do formulário
             onSave({ ...formData, id: formData.id || Date.now() });
             onClose();
           }}

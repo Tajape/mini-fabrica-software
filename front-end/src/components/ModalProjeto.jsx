@@ -1,3 +1,6 @@
+// Modal para criar/editar Projeto
+// Recebe: isOpen, onClose, onSave, clientes, projetoParaEditar
+// useEffect popula formData quando projetoParaEditar muda
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
@@ -19,12 +22,14 @@ export default function ModalProjeto({
     status: "planejado",
   });
 
-  // Função para limpar as datas (YYYY-MM-DD) para o input do navegador
+  // Normaliza datas para o formato esperado pelo input type="date" (YYYY-MM-DD)
   const formatarDataParaInput = (data) => {
     if (!data) return "";
     return data.split("T")[0];
   };
 
+  // Quando projetoParaEditar muda, popula o formulário com seus dados
+  // Caso contrário, reseta o formulário para vazio
   useEffect(() => {
     if (projetoParaEditar) {
       setFormData({
@@ -51,7 +56,7 @@ export default function ModalProjeto({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-[#1e293b] w-full max-w-2xl max-h-[90vh] rounded-2xl border border-slate-800 shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
+        {/* Cabeçalho do modal com título e botão fechar */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             {projetoParaEditar ? "📝 Editar Projeto" : "🚀 Novo Projeto"}
@@ -64,14 +69,15 @@ export default function ModalProjeto({
           </button>
         </div>
 
-        {/* Formulário */}
+        {/* Área com scroll para o formulário */}
         <div className="p-6 overflow-y-auto custom-scrollbar">
           <form
             id="project-form"
             className="grid grid-cols-1 md:grid-cols-2 gap-5"
             onSubmit={(e) => {
               e.preventDefault();
-              onSave(formData); // Removido o Date.now(), o Laravel resolve o ID
+              // Chama onSave com os dados do formulário e fecha o modal
+              onSave(formData);
               onClose();
             }}
           >
@@ -211,7 +217,7 @@ export default function ModalProjeto({
           </form>
         </div>
 
-        {/* Footer */}
+        {/* Rodapé do modal com botões Cancelar e Salvar */}
         <div className="p-6 border-t border-slate-800 flex gap-4 shrink-0 bg-[#1e293b]">
           <button
             type="button"

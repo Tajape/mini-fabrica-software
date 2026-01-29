@@ -1,3 +1,8 @@
+// Página de Lançamentos
+// Carrega lançamentos e projetos conforme filtros (projeto_id, data_inicio, data_fim)
+// fetchDados() usa api.get('/lancamentos', { params: filtros })
+// handleSalvar faz POST/PUT conforme lancamentoParaEditar e valida horas > 0
+// Tabela com ações para editar/excluir e modal inline para criar/editar
 import { useState, useEffect } from "react";
 import {
   Clock,
@@ -19,7 +24,7 @@ export default function Lancamentos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lancamentoParaEditar, setLancamentoParaEditar] = useState(null);
 
-  // Estados de Busca e Filtro
+  // Estados de busca local (por texto) e filtros (por data/projeto)
   const [busca, setBusca] = useState("");
   const [filtros, setFiltros] = useState({
     projeto_id: "",
@@ -36,15 +41,18 @@ export default function Lancamentos() {
     descricao: "",
   });
 
-  // Carrega dados sempre que os filtros de data/projeto mudarem no banco
+  // Recarrega dados sempre que os filtros de data/projeto mudarem
   useEffect(() => {
     fetchDados();
   }, [filtros]);
 
+  // Faz requisições paralelas para lançamentos e projetos
   const fetchDados = async () => {
     try {
       const [resLanc, resProj] = await Promise.all([
+        // Rota GET /api/lancamentos com filtros de data e projeto
         api.get("/lancamentos", { params: filtros }),
+        // Rota GET /api/projetos para preencher dropdown
         api.get("/projetos"),
       ]);
       setLancamentos(resLanc.data);
@@ -54,13 +62,14 @@ export default function Lancamentos() {
     }
   };
 
-  // Filtro de busca local (por texto) igual ao de Clientes
+  // Filtra lançamentos localmente por colaborador ou descrição (não depende do backend)
   const lancamentosFiltrados = lancamentos.filter(
     (l) =>
       l.colaborador.toLowerCase().includes(busca.toLowerCase()) ||
       (l.descricao && l.descricao.toLowerCase().includes(busca.toLowerCase())),
   );
 
+  // Abre o modal de edição preenchendo o formulário com dados do lançamento
   const abrirEdicao = (l) => {
     setLancamentoParaEditar(l);
     setFormData({
@@ -74,6 +83,7 @@ export default function Lancamentos() {
     setIsModalOpen(true);
   };
 
+  // Salva um novo lançamento ou atualiza um existente (valida horas > 0)
   const handleSalvar = async (e) => {
     e.preventDefault();
     if (formData.horas <= 0)
@@ -81,8 +91,10 @@ export default function Lancamentos() {
 
     try {
       if (lancamentoParaEditar) {
+        // Rota PUT /api/lancamentos/{id}
         await api.put(`/lancamentos/${lancamentoParaEditar.id}`, formData);
       } else {
+        // Rota POST /api/lancamentos
         await api.post("/lancamentos", formData);
       }
       fecharModal();
@@ -92,6 +104,7 @@ export default function Lancamentos() {
     }
   };
 
+  // Fecha o modal e reseta o formulário
   const fecharModal = () => {
     setIsModalOpen(false);
     setLancamentoParaEditar(null);
@@ -105,9 +118,11 @@ export default function Lancamentos() {
     });
   };
 
+  // Deleta um lançamento após confirmação
   const deletarLancamento = async (id) => {
     if (window.confirm("Deseja realmente excluir este lançamento?")) {
       try {
+        // Rota DELETE /api/lancamentos/{id}
         await api.delete(`/lancamentos/${id}`);
         fetchDados();
       } catch (err) {
@@ -137,6 +152,7 @@ export default function Lancamentos() {
 
       {/* ÁREA DE BUSCA E FILTROS */}
       <div className="space-y-4 mb-6">
+        {/* Busca por texto (colaborador ou descrição) */}
         <div className="relative">
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
@@ -151,7 +167,9 @@ export default function Lancamentos() {
           />
         </div>
 
+        {/* Filtros: Projeto, Data Início e Data Fim */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#1e293b]/50 p-4 rounded-2xl border border-slate-800/50">
+          {/* Filtro de Projeto */}
           <select
             className="bg-[#0f172a] border border-slate-700 text-slate-300 rounded-xl px-3 py-2 outline-none"
             value={filtros.projeto_id}
@@ -166,6 +184,7 @@ export default function Lancamentos() {
               </option>
             ))}
           </select>
+          {/* Filtro de Data Início */}
           <input
             type="date"
             className="bg-[#0f172a] border border-slate-700 text-slate-300 rounded-xl px-3 py-2"
@@ -173,6 +192,7 @@ export default function Lancamentos() {
               setFiltros({ ...filtros, data_inicio: e.target.value })
             }
           />
+          {/* Filtro de Data Fim */}
           <input
             type="date"
             className="bg-[#0f172a] border border-slate-700 text-slate-300 rounded-xl px-3 py-2"
