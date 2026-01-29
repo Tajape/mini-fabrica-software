@@ -38,6 +38,28 @@ const CORES_DEMANDA = {
   outros: "#64748b",
 };
 
+// Componente customizado para Tooltip com texto branco
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#0f172a",
+          border: "none",
+          borderRadius: "12px",
+          padding: "8px 12px",
+          color: "#ffffff",
+        }}
+      >
+        <p style={{ margin: 0, color: "#ffffff", fontWeight: "bold" }}>
+          {payload[0].name} - {payload[0].value}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [projetos, setProjetos] = useState([]);
@@ -391,13 +413,7 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={entry.cor} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0f172a",
-                    border: "none",
-                    borderRadius: "12px",
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>

@@ -4,6 +4,21 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
+// Função para formatar telefone com até 11 dígitos
+const formatarTelefone = (valor) => {
+  // Remove tudo que não é número
+  const numeros = valor.replace(/\D/g, "");
+
+  if (numeros.length === 0) return "";
+  if (numeros.length <= 2) return `(${numeros}`;
+  if (numeros.length <= 6)
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+  if (numeros.length <= 10)
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+  // Até 11 dígitos: (XX) XXXXX-XXXX
+  return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7, 11)}`;
+};
+
 export default function ModalCliente({
   isOpen,
   onClose,
@@ -89,12 +104,23 @@ export default function ModalCliente({
             </label>
             <input
               type="text"
+              inputMode="numeric"
               value={formData.telefone}
-              onChange={(e) =>
-                setFormData({ ...formData, telefone: e.target.value })
-              }
+              onChange={(e) => {
+                const input = e.target.value;
+                const apenasNumeros = input.replace(/\D/g, "");
+
+                // Permite digitar até 11 números
+                if (apenasNumeros.length <= 11) {
+                  setFormData({
+                    ...formData,
+                    telefone: formatarTelefone(input),
+                  });
+                }
+              }}
               className="w-full bg-[#0f172a] border border-slate-800 rounded-xl py-3 px-4 text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/50"
               placeholder="(11) 99999-9999"
+              maxLength="15"
             />
           </div>
 
