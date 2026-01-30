@@ -11,3 +11,7 @@ const api = axios.create({
 });
 
 export default api;
+
+
+//cuidar melhor da segurança em produção, como tokens de autenticação.
+//url fixa, importar variaveis de ambiente, criar uma variavel de ambiente .env
